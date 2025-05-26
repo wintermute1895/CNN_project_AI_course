@@ -3,7 +3,10 @@ import torch.nn as nn
 
 class SEBlock(nn.Module): # 对应common.py 给我们的新零件起个名字
     def __init__(self, c1, r=16):  # c1是输入通道数（有多少根电线进来），r是压缩比例
+CHI_Xu/CNN_work
         super().__init__() #change
+
+develop
         # 第1步：压缩 (Squeeze) - 把所有电线的信息汇总一下
         self.squeeze = nn.AdaptiveAvgPool2d(1) # 全局平均池化，把每个通道的特征图变成一个数
         # 第2步：激励 (Excitation) - 学习哪些电线更重要
