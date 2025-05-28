@@ -1,6 +1,7 @@
 import os
 import json
 from tqdm import tqdm
+
 from pathlib import Path
 
 def coco2yolo(coco_json_path, output_dir, image_dir):
@@ -21,6 +22,7 @@ def coco2yolo(coco_json_path, output_dir, image_dir):
     if not os.path.exists(classes_path):  # 避免重复写入
         with open(classes_path, 'w') as f_cls:
             f_cls.write('\n'.join(class_names))
+    
 
     # 按图像ID分组标注
     image_anns = {}
@@ -51,6 +53,7 @@ def coco2yolo(coco_json_path, output_dir, image_dir):
 
         with open(txt_path, 'w') as f_txt:
             for ann in anns:
+
                 # 获取类别ID（新增错误处理）
                 try:
                     cat_id = categories[ann['category_id']]
@@ -97,6 +100,7 @@ if __name__ == '__main__':
         f.write('\n'.join(sorted(global_classes, key=lambda x: data['categories'][0]['id'])))
 
     # 批量处理数据集
+
     for dataset in datasets:
         print(f"\n正在处理数据集: {dataset['image_dir']}")
         coco2yolo(
