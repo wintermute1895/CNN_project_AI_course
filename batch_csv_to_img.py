@@ -1,4 +1,4 @@
-#用法python batch_csv_to_img.py file1 file2
+#用法python batch_csv_to_img.py file1 file2 “”
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
