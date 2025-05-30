@@ -25,7 +25,7 @@ def main():
     
     # 4. 初始化视频源
     is_camera = opt.source.isdigit()
-    cap = cv2.VideoCapture(int(opt.source) if is_camera else cv2.VideoCapture(opt.source)
+    cap = cv2.VideoCaptureint(opt.source) if is_camera else cv2.VideoCapture(opt.source)
     assert cap.isOpened(), f'无法打开视频源: {opt.source}'
     
     # 5. 准备视频输出
