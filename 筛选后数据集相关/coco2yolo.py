@@ -108,3 +108,4 @@ if __name__ == '__main__':
             output_dir=dataset['output_dir'],
             image_dir=dataset['image_dir']
         )
+        
