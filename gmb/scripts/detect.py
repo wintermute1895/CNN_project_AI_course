@@ -1,3 +1,11 @@
+import sys
+print("Python 路径:", sys.executable)
+print("Pillow 路径:", [p for p in sys.path if 'PIL' in p or 'pillow' in p])
+import sys
+print("=== Python 模块搜索路径 ===")
+for path in sys.path:
+    print(path)
+print("=========================")
 import argparse
 import time
 import cv2
