@@ -1,5 +1,5 @@
 #暂时忽略标注，需要时一起提交
-labels/
+#labels/
 
 #不改yolo源码
 yolov5/
