@@ -1,4 +1,52 @@
 import sys
+import os
+
+# 修复 Pillow 路径问题
+venv_path = r"D:\12345\yolov5-env"
+site_packages = os.path.join(venv_path, "Lib", "site-packages")
+if site_packages not in sys.path:
+    sys.path.append(site_packages)
+
+# 确保 Pillow 已安装
+try:
+    from PIL import Image
+    print(f"Pillow 已安装，版本: {Image.__version__}")
+except ImportError:
+    print("正在安装 Pillow...")
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pillow"])
+    from PIL import Image
+    import cv2
+import random
+
+def plot_one_box(x, img, color=None, label=None, line_thickness=None):
+    """
+    在图像上绘制一个边界框
+    
+    参数:
+    x: 边界框坐标 [x1, y1, x2, y2]
+    img: 要绘制框的图像 (numpy数组)
+    color: BGR颜色元组
+    label: 标签文本
+    line_thickness: 线宽
+    """
+    tl = line_thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1
+    color = color or [random.randint(0, 255) for _ in range(3)]
+    c1, c2 = (int(x[0]), int(x[1])), (int(x[2]), int(x[3]))
+    cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
+    if label:
+        tf = max(tl - 1, 1)
+        t_size = cv2.getTextSize(label, 0, fontScale=tl/3, thickness=tf)[0]
+        c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
+        cv2.rectangle(img, c1, c2, color, -1, cv2.LINE_AA)
+        cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl/3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
+        import sys
+import os
+
+# 添加项目根目录到 Python 路径
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(BASE_DIR, 'yolov5'))
+import sys
 print("Python 路径:", sys.executable)
 print("Pillow 路径:", [p for p in sys.path if 'PIL' in p or 'pillow' in p])
 import sys
@@ -12,7 +60,7 @@ import cv2
 import torch
 import numpy as np
 from yolov5.utils.general import non_max_suppression
-from yolov5.utils.plots import plot_one_box
+# 不再从外部导入，使用我们自定义的函数
 
 # 硬件控制模拟（实际项目中替换为真实硬件接口）
 class HardwareControl:
