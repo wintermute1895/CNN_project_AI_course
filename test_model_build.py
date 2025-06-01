@@ -169,7 +169,7 @@ if __name__ == "__main__":
         LOGGER.info("  3. Commit these changes (common.py, your_custom_yaml.yaml, test_model_build.py) to your Git branch.")
         LOGGER.info("Next steps for Member C: ")
         LOGGER.info("  1. Pull these changes from Git.")
-        LOGGER.info("  2. Use the custom YAML ('%s') to start training on the server/GPU with your custom dataset.", CUSTOM_YAML_FILE_PATH)
+        LOGGER.info(f"  2. Use the custom YAML ('{CUSTOM_YAML_FILE_PATH}') to start training on the server/GPU with your custom dataset.")
     else:
         LOGGER.error(f"\nFAILURE: Custom YOLOv5 model build failed using '{CUSTOM_YAML_FILE_PATH}'.")
         LOGGER.error("Please check the error messages above. Common issues:")
