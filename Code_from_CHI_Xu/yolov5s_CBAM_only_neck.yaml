@@ -1,0 +1,79 @@
+# yolov5s_v7_cbam_only_neck.yaml
+# 目标: Backbone 使用 YOLOv5 v7.0 原始结构 (无SEBlock, 无CBAM)。
+#       CBAM (默认 ratio=16, kernel_size=7) 添加到 Neck 部分的关键C3模块之后。
+
+# Parameters (头部参数)
+# 作用: 定义模型的一些全局配置。
+nc: 22                # 类别数量 (number of classes) - **你需要根据你的数据集修改这里**
+depth_multiple: 0.33  # 模型深度倍数 (model depth multiple)
+width_multiple: 0.50  # 模型宽度/通道倍数 (layer channel multiple), 简写为 gw
+
+anchors: # 预设锚框 (anchors)
+  # 作用: 为不同大小的目标提供初始的检测框参考。
+  #       这些值是针对COCO数据集在640x640输入下优化得到的。
+  - [10, 13, 16, 30, 33, 23]  # P3/8 (检测小目标)
+  - [30, 61, 62, 45, 59, 119] # P4/16 (检测中等目标)
+  - [116, 90, 156, 198, 373, 326] # P5/32 (检测大目标)
+
+# YOLOv5 v7.0 Backbone (原始结构)
+# 作用: 从输入图像中提取P3, P4, P5三个尺度的特征图。
+# 注释格式: # 层号 | YAML中定义的输出通道(c_yaml) -> 实际输出通道(c_actual = make_divisible(c_yaml * gw, 8)) | 标记
+backbone:
+  # Stem
+  [[-1, 1, Conv, [64, 6, 2, 2]],       # 0 | 64->32  | P1_Conv (初始下采样)
+  # Stage 1
+   [-1, 1, Conv, [128, 3, 2]],      # 1 | 128->64 | P2_Conv (二次下采样)
+   [-1, 3, C3, [128]],               # 2 | 128->64 | P2_C3   (P2尺度特征提取)
+  # Stage 2
+   [-1, 1, Conv, [256, 3, 2]],      # 3 | 256->128| P3_Conv (三次下采样)
+   [-1, 6, C3, [256]],               # 4 | 256->128| P3_out  (L4实际输出: 128, Neck P3源)
+  # Stage 3
+   [-1, 1, Conv, [512, 3, 2]],      # 5 | 512->256| P4_Conv (四次下采样)
+   [-1, 9, C3, [512]],               # 6 | 512->256| P4_out  (L6实际输出: 256, Neck P4源)
+  # Stage 4
+   [-1, 1, Conv, [1024, 3, 2]],     # 7 | 1024->512| P5_Conv (五次下采样)
+   [-1, 3, C3, [1024]],              # 8 | 1024->512| P5_C3   (P5尺度特征提取)
+  # SPP Layer
+   [-1, 1, SPPF, [1024, 5]],       # 9 | 1024->512| P5_SPPF (L9实际输出: 512, Neck P5源)
+  ]
+
+# YOLOv5 v7.0 Head (Neck部分加入CBAM)
+# CBAM的__init__应为: def __init__(self, channels_from_yaml_arg0, ratio_from_yaml_arg1=16, kernel_size_from_yaml_arg2=7):
+# YAML中CBAM的args列表第一个元素应为该CBAM模块的【实际输入通道数】。
+head:
+  # --- FPN path (自顶向下特征融合) ---
+  [[-1, 1, Conv, [512, 1, 1]],           # 10 | L9_in(512), yaml_out=512 -> actual_out=256 | P5_neck_in (L10 actual out: 256)
+   [-1, 1, nn.Upsample, [None, 2, "nearest"]], # 11 | Upsamples L10 output (输出256通道, 尺寸同P4)
+   [[-1, 6], 1, Concat, [1]],            # 12 | Concat(L11_out(256), L6_P4_out(256)) | Concat_out_actual_ch: 512
+   [-1, 3, C3, [512, False]],            # 13 | L12_in(512), yaml_out=512 -> actual_out=256 | P4_fused (L13 actual out: 256)
+   # CBAM: 输入通道是L13的实际输出256。
+   [-1, 1, CBAM, [256]],                # 14 | CBAM_args[0]=256 (即channels_from_yaml_arg0) | P4_fused_CBAM (L14 actual out: 256)
+
+   [-1, 1, Conv, [256, 1, 1]],           # 15 | L14_in(256), yaml_out=256 -> actual_out=128 | (L15 actual out: 128)
+   [-1, 1, nn.Upsample, [None, 2, "nearest"]], # 16 | Upsamples L15 output (输出128通道, 尺寸同P3)
+   [[-1, 4], 1, Concat, [1]],            # 17 | Concat(L16_out(128), L4_P3_out(128)) | Concat_out_actual_ch: 256
+   [-1, 3, C3, [256, False]],            # 18 | L17_in(256), yaml_out=256 -> actual_out=128 | P3_fused (L18 actual out: 128)
+   # CBAM: 输入通道是L18的实际输出128。
+   [-1, 1, CBAM, [128]],                # 19 | CBAM_args[0]=128 | P3_detect_in (L19 actual out: 128) <- 1st Detect
+
+  # --- PAN path (自底向上特征融合) ---
+  # PAN路径从FPN路径中未经过CBAM增强的特征图(P3_fused)开始下采样，以获取更原始的定位信息。
+  # 然后与FPN中经过CBAM增强的更高层特征(P4_fused_CBAM)融合。
+  [18, 1, Conv, [256, 3, 2]],           # 20 | From L18_P3_fused(128), yaml_out=256 -> actual_out=128 | (L20 actual out: 128, 尺寸同P4)
+  [[-1, 14], 1, Concat, [1]],           # 21 | Concat(L20_out(128), L14_P4_fused_CBAM(256)) | Concat_out_actual_ch: 384
+  [-1, 3, C3, [512, False]],            # 22 | L21_in(384), yaml_out=512 -> actual_out=256 | P4_aggregated (L22 actual out: 256)
+  # CBAM: 输入通道是L22的实际输出256。
+  [-1, 1, CBAM, [256]],                # 23 | CBAM_args[0]=256 | P4_detect_in (L23 actual out: 256) <- 2nd Detect
+
+  # PAN路径继续，从P4_aggregated (L22, 未经CBAM)开始下采样。
+  [22, 1, Conv, [512, 3, 2]],           # 24 | From L22_P4_aggregated(256), yaml_out=512 -> actual_out=256 | (L24 actual out: 256, 尺寸同P5)
+  # 与FPN路径中的P5_neck_in (L10)融合。
+  [[-1, 10], 1, Concat, [1]],           # 25 | Concat(L24_out(256), L10_P5_neck_in(256)) | Concat_out_actual_ch: 512
+  [-1, 3, C3, [1024, False]],           # 26 | L25_in(512), yaml_out=1024-> actual_out=512| P5_aggregated (L26 actual out: 512)
+  # CBAM: 输入通道是L26的实际输出512。
+  [-1, 1, CBAM, [512]],                # 27 | CBAM_args[0]=512 | P5_detect_in (L27 actual out: 512) <- 3rd Detect
+
+  # --- Detection Head ---
+  # 输入来自Neck中三个经过CBAM增强的特征图 (L19, L23, L27)
+  [[19, 23, 27], 1, Detect, [nc, anchors]], # 28 | Detect head
+]

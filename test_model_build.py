@@ -8,7 +8,12 @@ import os
 # This script assumes it's in the project root (e.g., CNN_project_AI_course/)
 # and the yolov5 directory is a subdirectory.
 PROJECT_ROOT = Path(__file__).resolve().parent
+OUR_MODULE_DIR = PROJECT_ROOT / "Code_from_CHI_Xu"
 YOLOV5_ROOT = PROJECT_ROOT / "yolov5"
+
+if str(OUR_MODULE_DIR) not in sys.path:
+    sys.path.insert(0, str(OUR_MODULE_DIR)) # 插入到最前面
+    print(f"DEBUG: Prepended to sys.path for custom module files: {OUR_MODULE_DIR}")
 
 # Add YOLOv5 root to sys.path to allow importing its modules
 if str(YOLOV5_ROOT) not in sys.path:
@@ -134,7 +139,7 @@ if __name__ == "__main__":
     # Given your input: "Code_from_CHI_Xu/yolov5s_with_se.yaml"
     # This implies the script is in CNN_project_AI_course/
     # and your yaml is in CNN_project_AI_course/Code_from_CHI_Xu/yolov5s_with_se.yaml
-    CUSTOM_YAML_FILE_PATH = "Code_from_CHI_Xu/yolov5s_with_se.yaml"
+    CUSTOM_YAML_FILE_PATH = "Code_from_CHI_Xu/yolov5s_CBAM_only_neck.yaml"#每次测试改这个的路径，指向不同模型的配置文件
 
     NUMBER_OF_CLASSES_IN_YAML = 22  # ** This MUST match the nc value in your YAML for this test to be most meaningful **
                                   # Although the script will override cfg_dict['nc'], it's good for verification.
