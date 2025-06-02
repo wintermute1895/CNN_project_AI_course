@@ -53,3 +53,4 @@ if __name__ == '__main__':
     output_folder = sys.argv[2] if len(sys.argv) > 2 else None
     batch_convert(folder_path, output_folder)
 
+#python batch_csv_to_img.py tensorboard_csv/x_lr baseimages
