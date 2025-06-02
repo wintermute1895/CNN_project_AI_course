@@ -1,0 +1,68 @@
+// YOLOv5 Embodied AI Project Architecture
+digraph {
+	graph [rankdir=LR splines=ortho]
+	node [fillcolor=lightblue fontname=Arial shape=box style="rounded,filled"]
+	edge [fontname=Arial fontsize=10]
+	A [label="数据准备与增强
+(B同学)
+- 数据集 (图像/视频)
+- your_dataset.yaml
+- 增强策略 (hyp.yaml)"]
+	B [label="CNN模型训练与选择
+(C同学, A同学指导)
+- YOLOv5 (原始/SE/CBAM)
+- PyTorch, train.py, val.py
+- TensorBoard分析"]
+	C [label="最佳模型权重
+(best_model.pt
++ best_model.yaml)"]
+	D [label="视频/图片序列输入
+(演示数据源)"]
+	subgraph cluster_detector {
+		color=lightgrey fontname=Arial fontsize=12 label="感知模块: 障碍物检测 (D同学)" style=filled
+		D1 [label="模型加载
+(ObstacleDetector)"]
+		D2 [label="图像预处理"]
+		D3 [label="YOLOv5推理"]
+		D4 [label="后处理 (NMS, 坐标还原)"]
+		D5 [label="输出: detections_list
+(类别, bbox, 置信度)"]
+		D1 -> D3
+		D2 -> D3
+		D3 -> D4
+		D4 -> D5
+	}
+	E [label="决策逻辑模块
+(A同学)
+- decision_maker.py
+- 避障规则"]
+	subgraph cluster_simulation {
+		color=lightgrey fontname=Arial fontsize=12 label="行动模块: PyBullet仿真 (E同学, A同学支持)" style=filled
+		F1 [label="仿真环境初始化
+(场景, 机器人, 障碍物)"]
+		F2 [label="虚拟相机图像获取"]
+		F3 [label="机器人动作执行
+(根据指令)"]
+		F4 [label="PyBullet物理引擎
+(p.stepSimulation)"]
+	}
+	G [label="仿真演示结果
+(机器人避障行为)"]
+	H [label="决策时间序列日志
+(decision_log.json)"]
+	A -> B [label="数据集
+YAML配置"]
+	B -> C [label="训练好的模型"]
+	D -> D2 [label="图像/视频帧"]
+	C -> D1 [label="模型权重
+YAML配置"]
+	D5 -> E [label="检测结果
+(detections_list,
+img_dims)"]
+	E -> F3 [label="动作指令
+(action_command)"]
+	E -> H [label="记录决策"]
+	F3 -> F4 [label="控制机器人"]
+	F4 -> G [label="更新仿真状态"]
+	F2 -> D2 [label="虚拟相机帧 (闭环)" color=blue constraint=false style=dashed]
+}
