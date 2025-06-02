@@ -1,0 +1,49 @@
+digraph yolov5_project_flow_diagrams {
+	graph [fontcolor="#2D3436" fontname="Sans-Serif" fontsize=10 label=yolov5_project_flow_diagrams nodesep=0.60 pad=2.0 rankdir=LR ranksep=0.75 splines=ortho]
+	node [fillcolor=lightblue fixedsize=true fontcolor="#2D3436" fontname=Arial fontsize=9 height=1.4 imagescale=true labelloc=b shape=box style="rounded,filled" width=1.4]
+	edge [color="#7B8894" fontname=Arial fontsize=8]
+	"53162fa8e7244b3ca66bd9a03154abf6" [label="数据准备与增强 (B)
+- 数据集 (图像/视频)
+- your_dataset.yaml
+- 增强策略 (hyp.yaml)"]
+	aa714f6df47c4b81a4013d44f48de204 [label="CNN模型训练与选择 (C, A)
+- YOLOv5 (原始/SE/CBAM)
+- PyTorch, train.py, val.py
+- TensorBoard分析"]
+	"2df0575412f949bfb04c93cb1ad6e1a4" [label="最佳模型权重
+(best_model.pt + .yaml)"]
+	"7547980f70ee498dbb1f26529569c517" [label="视频/图片序列输入
+(演示数据源)"]
+	"969217014e014d1a8bfd4d90f17c8fbb" -> "6dc814d023b24cb1ad2874d2ac11057d" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	subgraph "cluster_感知模块 (D)" {
+		graph [bgcolor="#E5F5FD" fontname="Sans-Serif" fontsize=12 label="感知模块 (D)" labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"969217014e014d1a8bfd4d90f17c8fbb" [label="YOLOv5 推理
+(ObstacleDetector 类)
+包含预处理、NMS、坐标还原"]
+		"6dc814d023b24cb1ad2874d2ac11057d" [label="输出: detections_list
+(类别, bbox, 置信度)"]
+	}
+	"61aea805902346099bac29b8603661f5" [label="决策逻辑模块 (A)
+- decision_maker.py
+- 避障规则"]
+	"69d1815aff74408481cb6f4788527061" [label="决策时间序列日志
+(decision_log.json)"]
+	subgraph "cluster_行动模块: PyBullet仿真 (E, A)" {
+		graph [bgcolor="#E5F5FD" fontname="Sans-Serif" fontsize=12 label="行动模块: PyBullet仿真 (E, A)" labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"546eabfc3e554156b8cc8e00e756efa4" [label="PyBullet环境与机器人初始化"]
+		"20eae4c5ab4c4d689dc77a678423a7d2" [label="虚拟相机图像获取"]
+		"710298b9bfcf4be6aed6f9f9082ec931" [label="机器人动作执行"]
+	}
+	"2a13790bb683496aaa3a5744ed760df5" [label="仿真演示结果
+(机器人避障行为)"]
+	"53162fa8e7244b3ca66bd9a03154abf6" -> aa714f6df47c4b81a4013d44f48de204 [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	aa714f6df47c4b81a4013d44f48de204 -> "2df0575412f949bfb04c93cb1ad6e1a4" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"7547980f70ee498dbb1f26529569c517" -> "969217014e014d1a8bfd4d90f17c8fbb" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"2df0575412f949bfb04c93cb1ad6e1a4" -> "969217014e014d1a8bfd4d90f17c8fbb" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"6dc814d023b24cb1ad2874d2ac11057d" -> "61aea805902346099bac29b8603661f5" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"61aea805902346099bac29b8603661f5" -> "710298b9bfcf4be6aed6f9f9082ec931" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"61aea805902346099bac29b8603661f5" -> "69d1815aff74408481cb6f4788527061" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"710298b9bfcf4be6aed6f9f9082ec931" -> "2a13790bb683496aaa3a5744ed760df5" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"20eae4c5ab4c4d689dc77a678423a7d2" -> "969217014e014d1a8bfd4d90f17c8fbb" [label="虚拟相机帧
+(闭环反馈)" color=blue dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13 style=dashed]
+}
