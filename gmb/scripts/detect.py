@@ -96,12 +96,11 @@ class DetectionProcessor:
             class_name = self.names[class_idx]
             bbox = [int(coord.item()) for coord in xyxy]
             confidence = float(conf.item())
-            
-            results.append({
-                "class": class_name,
-                "confidence": confidence,
+        results.append({
+                "class_id": class_idx,        # 改为 class_id
+                "class_name": class_name,     # 改为 class_name
                 "bbox": bbox,
-                "class_idx": class_idx
+                "confidence": confidence
             })
         return results
     
@@ -182,6 +181,8 @@ class ObjectDetector:
     
     def detect(self, image):
         """执行检测"""
+        # 获取原始图像尺寸
+        height, width = image.shape[:2]
         # 预处理
         img_tensor = self.preprocess_image(image)
         
@@ -201,7 +202,8 @@ class ObjectDetector:
         # 更新FPS
         self.update_fps()
         
-        return structured_detections
+        return structured_detections, height, width
+
     
     def update_fps(self):
         """更新FPS计算"""
@@ -224,8 +226,8 @@ def detect_image(weights, source, output, conf_thres=0.5, iou_thres=0.45, device
         print(f"错误：无法加载图像 {source}")
         return
     
-    # 执行检测
-    detections = detector.detect(img)
+    # 执行检测 - 接收新格式返回值
+    detections, img_height, img_width = detector.detect(img)
     
     # 处理检测结果
     img_width = img.shape[1]
@@ -233,10 +235,9 @@ def detect_image(weights, source, output, conf_thres=0.5, iou_thres=0.45, device
         # 决策
         detector.processor.make_decision(detection, img_width)
         
-        # 打印信息
-        print(f"检测到: {detection['class']} | 置信度: {detection['confidence']:.2f}")
+         # 打印信息 - 使用新键名
+        print(f"检测到: {detection['class_name']} | 置信度: {detection['confidence']:.2f}")
         print(f"位置: 左上({detection['bbox'][0]},{detection['bbox'][1]}) 右下({detection['bbox'][2]},{detection['bbox'][3]})")
-    
     # 可视化结果
     img = detector.processor.visualize_detections(img, detections)
     
@@ -276,7 +277,7 @@ def detect_video(weights, source, output, conf_thres=0.5, iou_thres=0.45, device
             break
         
         # 执行检测
-        detections = detector.detect(frame)
+        detections, frame_height, frame_width = detector.detect(frame)
         
         # 处理检测结果并做决策
         for detection in detections:
