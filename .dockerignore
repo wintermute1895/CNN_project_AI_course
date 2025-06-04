@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# IDE & OS specific
+.idea/
+.vscode/
+*.DS_Store
+yolov5/.github/
+yolov5/tutorial.ipynb # 通常不需要在镜像中
+yolov5/classify/tutorial.ipynb
+yolov5/segment/tutorial.ipynb
+
+# Python caches and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*env*
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Large files and outputs that should be volume-mounted or are build artifacts
+# 你的项目结构中似乎没有明确的 'datasets' 根目录，但 'labels' 可能与数据相关
+# 如果 'labels' 是原始数据的一部分，并且体积不大，可以考虑复制
+# 但如果是训练时生成或非常大，则应挂载
+# labels/  # 考虑是否要包含，如果体积大则不建议
+
+# YOLOv5 运行输出，通常不希望包含在基础镜像里
+yolov5/runs/
+runs/ # 如果你在项目根目录也有 runs 文件夹
+
+# ONNX 文件如果是构建/导出产物，可以忽略
+# yolov5s_baseline_structure.onnx
+# yolov5s_with_se_structure.onnx
+
+# 特定实验权重，通常是训练产物
+# exp-s-4358.pt
+
+# 文档和临时文件
+*.md # 如果你不想包含 markdown 文件在镜像中，但 README.md 可能需要
+Code_from_CHI_Xu/project_arch_diagrams_simple_labels
+Code_from_CHI_Xu/yolov5_embodied_ai_architecture # 如果是图片或文档
+Code_from_CHI_Xu/yolov5_project_flow_diagrams
+Code_from_CHI_Xu/yolov5_project_flow_diagrams.png
+daliy_work_records/
+基线模型相关/
+筛选后数据集相关/ # 这些目录看起来是开发过程中的辅助文件或脚本，可能不需要在最终镜像中
+
+# Dockerfile 本身
+Dockerfile # 或者 Dockerfile.py 如果你那个是最终的
