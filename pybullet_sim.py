@@ -237,7 +237,7 @@ class SimpleSimulation:
         steering_angle = 0.0
 
         if action_command_str == "MOVE_FORWARD":
-            target_velocity = 5.0  # 赛车速度可以快一点
+            target_velocity = 15.0  # 赛车速度可以快一点
         elif action_command_str == "STOP":
             target_velocity = 0.0
             steering_angle = 0.0  # 停车时方向盘回正

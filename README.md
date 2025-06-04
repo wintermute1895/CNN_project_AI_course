@@ -249,47 +249,195 @@
 联调成果：可以实现小车在pybullet环境内进行运动避障和实时环境检测。
 
 ---
-### 五、项目复现（写给读者）
+## 五、项目复现 (写给读者)
 
-1.如果你不使用docker，并且想从头开始训练，首先请创建环境，然后按依赖文档中的内容安装依赖
+本项目提供了两种复现方式：通过 Docker (推荐，环境一致性好) 或直接在本地环境搭建。
 
-```bash
-conda create yolov5s_tju_ai_course -pytorch
-```
+### 方式一：使用 Docker (推荐)
 
-```bash
-pip install -r requirements.txt
-```
+使用 Docker 可以确保在与开发者一致的环境中运行项目，避免因环境差异导致的问题。
 
-2.假设你已下载并准备使用我们准备好的数据集，请进行数据格式转换
+1.  **环境准备:**
+    *   **安装 Docker:** 请根据你的操作系统从 Docker 官网下载并安装 Docker Desktop (Windows/macOS) 或 Docker Engine (Linux)。
+    *   **(可选，推荐用于GPU加速训练/推理) NVIDIA GPU 用户:**
+        *   安装最新的 NVIDIA 驱动。
+        *   安装 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)，以便 Docker 容器可以使用 GPU。
 
-```bash
-python cocotoyolo.py
-```
+2.  **获取项目文件:**
+    *   下载本项目的压缩包并解压，或者通过 `git clone` 获取项目。
 
-3.完成数据格式转换之后，开始训练
+3.  **准备数据集 (如果需要重新训练或使用特定数据集进行评估/演示):**
+    *   在你的项目根目录下创建一个用于存放数据集的文件夹，例如 `my_datasets/`。
+    *   将你的数据集（例如，COCO格式的图片和标注文件，或已经转换为YOLO格式的数据）放入此文件夹。
+    *   **注意:** 项目中使用的配置文件（如数据 `.yaml` 文件和模型 `.yaml` 文件）中的路径可能需要根据你实际挂载到容器内的数据集路径进行调整。我们推荐将宿主机的数据集目录挂载到容器内的 `/app/datasets`。
 
-```bash
-python train.py
-```
+4.  **构建 Docker 镜像:**
+    *   打开终端或命令行，导航到解压后的项目根目录 (包含 `Dockerfile` 文件的目录)。
+    *   运行以下命令构建 Docker 镜像 (将 `your-custom-tag`替换为你想要的标签，如 `latest` 或 `v1.0`):
+        ```bash
+        docker build -t yolov5-tju-ai:your-custom-tag .
+        ```
+    *   构建过程可能需要一些时间，因为它会下载基础镜像并安装所有依赖。
 
-4.训练结果将会自动保存在相关目录下，接下来运行
+5.  **运行 Docker 容器并执行任务:**
 
-```bash
-python val.py
-```
+    我们推荐启动一个交互式的 Bash Shell，这样你可以在容器内灵活执行各种脚本。
 
-5.使用得到的`best.pt`运行主程序（需要自己改路径）
+    *   **启动交互式 Shell (通用，可根据需求添加 GPU 和 GUI 支持):**
+        ```bash
+        # 基础命令 (无 GPU, 无 GUI)
+        docker run -it --rm \
+            -v $(pwd)/my_datasets:/app/datasets \         # 将你的本地数据集目录挂载到容器的 /app/datasets
+            -v $(pwd)/runs_output:/app/yolov5/runs \    # 将本地 runs_output 目录挂载到容器的 /app/yolov5/runs (用于保存训练结果)
+            yolov5-tju-ai:your-custom-tag \
+            bash
 
-```bash
-python main_simulation_loop.py
-```
+        # Linux 用户，如果需要 PyBullet GUI (X11 转发):
+        # xhost +local:docker
+        # docker run -it --rm \
+        #     --gpus all \                                  # 如果有 NVIDIA GPU 并安装了 NVIDIA Container Toolkit
+        #     --env="DISPLAY" \
+        #     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+        #     -v $(pwd)/my_datasets:/app/datasets \
+        #     -v $(pwd)/runs_output:/app/yolov5/runs \
+        #     yolov5-tju-ai:your-custom-tag \
+        #     bash
 
-6.可以看到屏幕上打开pybullet界面，小车开始运动
+        # macOS 用户 (需要 XQuartz 并配置, 如果需要 PyBullet GUI):
+        # IP=$(ifconfig en0 | grep inet | awk '$1=="inet" {print $2}') # 获取 IP
+        # xhost + $IP
+        # docker run -it --rm \
+        #     --env DISPLAY=$IP:0 \
+        #     -v /tmp/.X11-unix:/tmp/.X11-unix \
+        #     -v $(pwd)/my_datasets:/app/datasets \
+        #     -v $(pwd)/runs_output:/app/yolov5/runs \
+        #     yolov5-tju-ai:your-custom-tag \
+        #     bash
+        # (如果 macOS 使用 GPU, 可能需要更复杂的 Docker Desktop 配置或特定基础镜像)
+
+        # Windows 用户 (需要 VcXsrv 或 Xming 并配置, 如果需要 PyBullet GUI):
+        # docker run -it --rm \
+        #     --gpus all \                                  # 如果有 NVIDIA GPU (需要 Docker Desktop WSL2 后端和 NVIDIA Container Toolkit 支持)
+        #     -e DISPLAY=<你的Windows主机IP>:0.0 \
+        #     -v ${PWD}/my_datasets:/app/datasets \
+        #     -v ${PWD}/runs_output:/app/yolov5/runs \
+        #     yolov5-tju-ai:your-custom-tag \
+        #     bash
+        ```
+        *   **说明:**
+            *   `-it`: 以交互模式运行并分配一个伪终端。
+            *   `--rm`: 容器退出时自动删除。
+            *   `-v $(pwd)/my_datasets:/app/datasets`: 将当前宿主机目录下的 `my_datasets` 文件夹挂载到容器内的 `/app/datasets` 路径。请确保 `my_datasets` 存在或替换为你的实际数据集路径。
+            *   `-v $(pwd)/runs_output:/app/yolov5/runs`: 将当前宿主机目录下的 `runs_output` 文件夹挂载到容器内的 `/app/yolov5/runs` 路径。训练产生的结果（模型权重、日志等）会保存在这里。请确保 `runs_output` 存在。
+            *   `--gpus all`: (NVIDIA GPU 用户) 允许容器访问所有可用的 GPU。
+            *   GUI 相关参数 (`-e DISPLAY`, `-v /tmp/.X11-unix...`): 用于在容器内运行的图形化应用（如 PyBullet 仿真窗口）显示在宿主机上。具体配置因操作系统而异。
+            *   `yolov5-tju-ai:your-custom-tag`: 你构建的镜像名称和标签。
+            *   `bash`: 在容器内启动一个 Bash Shell。
+
+    *   **在容器内执行脚本:**
+        成功进入容器后，你会看到类似 `root@<container_id>:/app#` 的提示符。现在你可以像在本地一样运行脚本了。
+        ```bash
+        # (在容器内 /app 目录下)
+
+        # 示例 1: 数据格式转换 (如果你的数据集需要)
+        # 假设你的原始数据在 /app/datasets/raw_data，转换后输出到 /app/datasets/yolo_data
+        # python cocotoyolo.py --input_dir /app/datasets/raw_data --output_dir /app/datasets/yolo_data
+        # (请根据你的 cocotoyolo.py 脚本实际参数进行调整)
+
+        # 示例 2: 开始训练
+        # 确保你的数据配置文件 (例如 my_custom_data.yaml) 中的路径指向容器内的 /app/datasets/...
+        # 并且你的模型配置文件 (例如 Code_from_CHI_Xu/yolov5s_with_se.yaml) 也被正确引用
+        python yolov5/train.py \
+            --img 640 \
+            --batch 16 \
+            --epochs 100 \
+            --data /app/datasets/your_data_config.yaml \
+            --cfg Code_from_CHI_Xu/yolov5s_your_custom_model.yaml \
+            --weights yolov5s.pt \ # 使用项目根目录下的预训练权重
+            --project /app/yolov5/runs/train \ # 训练输出将保存到挂载的宿主机 runs_output 目录
+            --name my_docker_experiment
+
+        # 示例 3: 验证模型
+        # 使用你训练得到的权重，它现在应该在 /app/yolov5/runs/train/my_docker_experiment/weights/best.pt
+        python yolov5/val.py \
+            --weights /app/yolov5/runs/train/my_docker_experiment/weights/best.pt \
+            --data /app/datasets/your_data_config.yaml \
+            --img 640 \
+            --task test # 或其他任务参数
+
+        # 示例 4: 运行主仿真循环 (演示)
+        # 假设使用训练好的最佳权重
+        python main_simulation_loop.py --weights /app/yolov5/runs/train/my_docker_experiment/weights/best.pt
+        # 如果 main_simulation_loop.py 默认启动 PyBullet GUI，请确保你运行容器时添加了 GUI 转发参数。
+        # 如果你的脚本支持 --no-gui 或类似参数用于非图形化运行，也可以使用。
+
+        # 退出容器
+        # exit
+        ```
+
+### 方式二：本地环境搭建 (不使用 Docker)
+
+如果你希望直接在本地环境运行项目：
+
+1.  **获取项目文件:**
+    *   下载本项目的压缩包并解压，或者通过 `git clone` 获取项目。
+
+2.  **创建 Python 虚拟环境 (推荐):**
+    我们强烈建议使用虚拟环境 (如 venv 或 conda) 来隔离项目依赖。假设你使用 Python 3.9+ (与 Dockerfile 中一致)。
+    ```bash
+    # 使用 venv (Python 内置)
+    python -m venv venv_yolov5_tju
+    # 激活环境
+    # Windows:
+    # venv_yolov5_tju\Scripts\activate
+    # Linux/macOS:
+    # source venv_yolov5_tju/bin/activate
+
+    # 或者使用 conda
+    # conda create -n yolov5_tju_env python=3.9 -y
+    # conda activate yolov5_tju_env
+    ```
+
+3.  **安装依赖:**
+    进入项目根目录，安装 `requirements.txt` 中列出的依赖：
+    ```bash
+    pip install -r requirements.txt
+    ```
+    *   **注意:** `requirements.txt` 是为 Docker (Linux) 环境生成的。在 Windows 或 macOS 上，某些包的安装可能需要额外的步骤或有细微差异。如果遇到问题，请尝试单独安装出问题的包，并查找其特定于你操作系统的安装指南。PyTorch 的安装尤其建议参考其官网根据你的 CUDA 版本（如果使用 GPU）或 CPU 来获取正确的安装命令。
+
+4.  **准备数据集和预训练权重:**
+    *   将你的数据集放置在项目中合适的位置，并确保配置文件中的路径正确指向它们。
+    *   确保预训练权重文件 (如 `yolov5s.pt`) 位于项目根目录或脚本可以找到的位置。
+
+5.  **执行项目脚本:**
+    现在你可以按照项目原本的流程运行脚本：
+    *   **数据格式转换 (如果需要):**
+        ```bash
+        python cocotoyolo.py # (根据脚本实际参数调整)
+        ```
+    *   **开始训练:**
+        ```bash
+        python yolov5/train.py --img 640 --batch 16 --epochs 100 --data path/to/your_data_config.yaml --cfg path/to/your_model_config.yaml --weights yolov5s.pt --name local_experiment
+        ```
+    *   **验证模型:**
+        ```bash
+        python yolov5/val.py --weights yolov5/runs/train/local_experiment/weights/best.pt --data path/to/your_data_config.yaml --img 640
+        ```
+    *   **运行主仿真循环 (演示):**
+        ```bash
+        python main_simulation_loop.py --weights yolov5/runs/train/local_experiment/weights/best.pt
+        ```
+        (确保 PyBullet 可以正常显示 GUI，或者你的脚本支持非 GUI 模式)。
+
+    *   **查看屏幕上的 PyBullet 界面，小车开始运动。**
 
 ---
 
-**如果你使用docker，请运行**（等docker file写完的）
+**重要提示给使用者：**
+
+*   **路径配置：** 无论是使用 Docker 还是本地环境，请务必检查并根据你的实际情况修改项目中的**数据配置文件 (`.yaml`)** 和**模型配置文件 (`.yaml`)** 中的路径，确保它们指向正确的数据集位置和模型定义。
+*   **权重文件：** 运行推理或仿真时，确保 `--weights` 参数指向正确的模型权重文件 (`.pt`)。
+*   **GPU 支持：** 如果你希望使用 GPU 加速，请确保你的环境（本地或 Docker）已正确配置 CUDA 和 cuDNN (对于 NVIDIA GPU)。
 
 ### 六、我们遇到过的问题：
 
